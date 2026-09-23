@@ -1,0 +1,12 @@
+// Cloudflare Workers — static assets only (no server code runs).
+// `npm run build` writes the site to dist/client; `npx wrangler deploy`
+// uploads it. Unknown paths (e.g. /product/iphone-15) get index.html and
+// the app's router takes over in the browser.
+{
+  "name": "k-tech-mobile",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./dist/client",
+    "not_found_handling": "single-page-application"
+  }
+}

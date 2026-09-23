@@ -20,7 +20,17 @@ import { qk } from "@/lib/query-keys";
 import { getCategories } from "@/services/categoryService";
 import { getFeaturedProducts, getOfferProducts, type Product } from "@/services/productService";
 
+// Hero picture: put your own file at src/assets/hero.webp (or .jpg / .png)
+// and it is used automatically (bundled, cached, served from your domain).
+// Until then the original hosted image is used.
+const localHero = Object.values(
+  import.meta.glob<string>("../assets/hero.{webp,jpg,jpeg,png}", {
+    eager: true,
+    import: "default",
+  }),
+)[0];
 const HERO_IMAGE =
+  localHero ??
   "https://vibe.filesafe.space/1790084348979734783/assets/15d93eef-8043-4c34-bb25-ce6d12e12ba3.png";
 
 export const Route = createFileRoute("/")({
@@ -94,7 +104,11 @@ function Index() {
             <img
               src={HERO_IMAGE}
               alt="Phones and accessories at K-Tech"
-              className="w-full rounded-3xl object-cover shadow-2xl shadow-cozy-burnt/20"
+              width={1200}
+              height={900}
+              fetchPriority="high"
+              decoding="async"
+              className="h-auto w-full rounded-3xl object-cover shadow-2xl shadow-cozy-burnt/20"
             />
           </div>
         </div>

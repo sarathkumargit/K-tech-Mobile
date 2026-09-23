@@ -8,6 +8,14 @@ const url = import.meta.env["VITE_SUPABASE_URL"] as string | undefined;
 const anonKey = import.meta.env["VITE_SUPABASE_ANON_KEY"] as string | undefined;
 
 export const isSupabaseConfigured = Boolean(url && anonKey);
+// Origin of the Supabase project (for <link rel="preconnect">), or null.
+export const supabaseOrigin = (() => {
+  try {
+    return url ? new URL(url).origin : null;
+  } catch {
+    return null;
+  }
+})();
 
 export type TypedSupabaseClient = SupabaseClient<Database>;
 

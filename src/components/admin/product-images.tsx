@@ -82,7 +82,8 @@ export function ProductImagesManager({
   return (
     <Panel title="Photos">
       <p className="-mt-2 mb-4 text-xs text-muted-foreground">
-        JPG, PNG, WebP, AVIF or GIF, up to 5 MB each. The first photo is the main image.
+        JPG, PNG, WebP, AVIF or GIF. Large photos are shrunk automatically. The first photo is the
+        main image.
       </p>
       {images.length > 0 && (
         <ul className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">

@@ -28,7 +28,7 @@ export function Footer() {
               </div>
               <span className="font-display text-2xl tracking-tight">K-TECH</span>
             </div>
-            <p className="mt-4 max-w-xs text-sm text-primary-foreground/75">
+            <p className="mt-4 max-w-xs text-sm text-primary-foreground/90">
               Your trusted mobile phone shop. Brand new phones, used phones, accessories, and expert
               repairs — all in one place.
             </p>
@@ -36,7 +36,7 @@ export function Footer() {
 
           <div>
             <h3 className="font-display text-base">Shop</h3>
-            <ul className="mt-3 space-y-2 text-sm text-primary-foreground/75">
+            <ul className="mt-3 space-y-2 text-sm text-primary-foreground/90">
               <li>
                 <Link
                   to="/shop"
@@ -62,7 +62,7 @@ export function Footer() {
 
           <div>
             <h3 className="font-display text-base">Company</h3>
-            <ul className="mt-3 space-y-2 text-sm text-primary-foreground/75">
+            <ul className="mt-3 space-y-2 text-sm text-primary-foreground/90">
               <li>
                 <Link to="/about" className="hover:text-cozy-light-peach">
                   About Us
@@ -85,9 +85,9 @@ export function Footer() {
             <h3 className="font-display text-base">Connect</h3>
             {settings && (
               <>
-                <p className="mt-3 text-sm text-primary-foreground/75">{settings.address}</p>
-                <p className="mt-1 text-sm text-primary-foreground/75">{settings.phone}</p>
-                <p className="mt-1 text-sm text-primary-foreground/75">{settings.email}</p>
+                <p className="mt-3 text-sm text-primary-foreground/90">{settings.address}</p>
+                <p className="mt-1 text-sm text-primary-foreground/90">{settings.phone}</p>
+                <p className="mt-1 text-sm text-primary-foreground/90">{settings.email}</p>
               </>
             )}
             {whatsapp && (
@@ -104,7 +104,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-primary-foreground/15 pt-6 text-sm text-primary-foreground/60 sm:flex-row">
+        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-primary-foreground/15 pt-6 text-sm text-primary-foreground/85 sm:flex-row">
           <span>
             © {new Date().getFullYear()} {settings?.shop_name ?? "K-Tech"}. All rights reserved.
           </span>

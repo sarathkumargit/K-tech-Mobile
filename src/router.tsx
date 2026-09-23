@@ -15,6 +15,9 @@ export const getRouter = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
+        // Reuse fetched data for 30s: going back to a page is instant and
+        // Supabase gets fewer requests. Saving anything refreshes it at once.
+        staleTime: 30_000,
         // Retry network hiccups, but not "keys missing" or permission errors.
         retry: (failureCount, error) => {
           if (error instanceof SupabaseNotConfiguredError) return false;
