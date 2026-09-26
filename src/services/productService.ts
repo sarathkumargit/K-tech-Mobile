@@ -14,6 +14,16 @@ export type ProductImage = ProductImageRow;
 export type ProductWithImages = Product & { images: ProductImage[] };
 export type ProductSort = "newest" | "price_asc" | "price_desc";
 
+/**
+ * What a product card actually draws. Everything a list never shows — the
+ * long description, the specs and features JSON, the search_vector — is left
+ * out on purpose.
+ */
+export type ProductListItem = Omit<
+  Product,
+  "description" | "specifications" | "features" | "offer_start_date" | "updated_at"
+>;
+
 export type ProductFilters = {
   categorySlug?: string;
   search?: string;
@@ -23,6 +33,37 @@ export type ProductFilters = {
 };
 
 const CATALOG = "product_catalog";
+
+// Asking for these columns instead of "*" is the difference between a grid
+// response of a few KB and one of a few hundred KB: `select("*")` on the
+// catalog view also ships every product's full description, its specs and
+// features JSON and its search_vector, none of which a card draws. Over a
+// long-distance connection that payload is what the visitor waits for.
+const CARD_COLUMNS = [
+  "id",
+  "name",
+  "slug",
+  "short_description",
+  "price",
+  "compare_price",
+  "stock_quantity",
+  "category_id",
+  "category_name",
+  "category_slug",
+  "image_url",
+  "brand",
+  "sku",
+  "condition",
+  "is_featured",
+  "is_active",
+  "created_at",
+  "offer_id",
+  "offer_title",
+  "offer_discount_type",
+  "offer_discount_value",
+  "offer_end_date",
+  "final_price",
+].join(",");
 
 function applySearch<Q extends { or: (filters: string) => Q }>(query: Q, search?: string): Q {
   const q = cleanSearch(search ?? "");
@@ -42,7 +83,7 @@ function applySearch<Q extends { or: (filters: string) => Q }>(query: Q, search?
 // ---------- customer-facing (active products only) ----------
 
 export function getProducts(filters: ProductFilters = {}) {
-  let query = getSupabase().from(CATALOG).select("*").eq("is_active", true);
+  let query = getSupabase().from(CATALOG).select(CARD_COLUMNS).eq("is_active", true);
   if (filters.categorySlug) query = query.eq("category_slug", filters.categorySlug);
   if (filters.offersOnly) query = query.not("offer_id", "is", null);
   query = applySearch(query, filters.search);
@@ -60,14 +101,14 @@ export function getProducts(filters: ProductFilters = {}) {
       });
   }
   if (filters.limit) query = query.limit(filters.limit);
-  return unwrap<Product[]>(query);
+  return unwrap<ProductListItem[]>(query);
 }
 
 export async function getFeaturedProducts(limit = 8) {
-  const featured = await unwrap<Product[]>(
+  const featured = await unwrap<ProductListItem[]>(
     getSupabase()
       .from(CATALOG)
-      .select("*")
+      .select(CARD_COLUMNS)
       .eq("is_active", true)
       .eq("is_featured", true)
       .order("created_at", { ascending: false })
@@ -79,10 +120,10 @@ export async function getFeaturedProducts(limit = 8) {
 }
 
 export function getOfferProducts(limit = 12) {
-  return unwrap<Product[]>(
+  return unwrap<ProductListItem[]>(
     getSupabase()
       .from(CATALOG)
-      .select("*")
+      .select(CARD_COLUMNS)
       .eq("is_active", true)
       .not("offer_id", "is", null)
       .order("offer_end_date", { ascending: true })
@@ -92,27 +133,39 @@ export function getOfferProducts(limit = 12) {
 
 export async function getProductBySlug(slug: string): Promise<ProductWithImages | null> {
   const supabase = getSupabase();
-  const product = await unwrap<Product | null>(
-    supabase.from(CATALOG).select("*").eq("slug", slug).eq("is_active", true).maybeSingle(),
-  );
+  // The images are looked up by the product's slug through the foreign key
+  // rather than by its id, so this query does not have to wait for the first
+  // one to come back. Two requests leaving together cost one round trip;
+  // fetching the product and then its images costs two, and on a product page
+  // that wait happens before anything is drawn.
+  const [product, images] = await Promise.all([
+    unwrap<Product | null>(
+      supabase.from(CATALOG).select("*").eq("slug", slug).eq("is_active", true).maybeSingle(),
+    ),
+    unwrap<(ProductImage & { products?: unknown })[]>(
+      supabase
+        .from("product_images")
+        .select("*, products!inner(slug, is_active)")
+        .eq("products.slug", slug)
+        .eq("products.is_active", true)
+        .order("sort_order")
+        .order("created_at"),
+    ),
+  ]);
   if (!product) return null;
-  const images = await unwrap<ProductImage[]>(
-    supabase
-      .from("product_images")
-      .select("*")
-      .eq("product_id", product.id)
-      .order("sort_order")
-      .order("created_at"),
-  );
-  return { ...product, images };
+  // Drop the joined `products` object; only the image rows are wanted.
+  return {
+    ...product,
+    images: images.map(({ products: _joined, ...image }) => image as ProductImage),
+  };
 }
 
 export function getRelatedProducts(product: Pick<Product, "id" | "category_id">, limit = 4) {
-  if (!product.category_id) return Promise.resolve([] as Product[]);
-  return unwrap<Product[]>(
+  if (!product.category_id) return Promise.resolve([] as ProductListItem[]);
+  return unwrap<ProductListItem[]>(
     getSupabase()
       .from(CATALOG)
-      .select("*")
+      .select(CARD_COLUMNS)
       .eq("is_active", true)
       .eq("category_id", product.category_id)
       .neq("id", product.id)
@@ -122,8 +175,8 @@ export function getRelatedProducts(product: Pick<Product, "id" | "category_id">,
 }
 
 export function getProductsByIds(ids: string[]) {
-  if (ids.length === 0) return Promise.resolve([] as Product[]);
-  return unwrap<Product[]>(getSupabase().from(CATALOG).select("*").in("id", ids));
+  if (ids.length === 0) return Promise.resolve([] as ProductListItem[]);
+  return unwrap<ProductListItem[]>(getSupabase().from(CATALOG).select(CARD_COLUMNS).in("id", ids));
 }
 
 // ---------- admin ----------
@@ -147,20 +200,21 @@ export type ProductInput = {
 };
 
 export function adminListProducts(search?: string) {
-  let query = getSupabase().from(CATALOG).select("*");
+  let query = getSupabase().from(CATALOG).select(CARD_COLUMNS);
   query = applySearch(query, search);
-  return unwrap<Product[]>(query.order("created_at", { ascending: false }));
+  return unwrap<ProductListItem[]>(query.order("created_at", { ascending: false }));
 }
 
 export async function adminGetProduct(id: string) {
   const supabase = getSupabase();
-  const product = await unwrap<ProductRow | null>(
-    supabase.from("products").select("*").eq("id", id).maybeSingle(),
-  );
+  // Both queries key off the id we already have, so they go out together.
+  const [product, images] = await Promise.all([
+    unwrap<ProductRow | null>(supabase.from("products").select("*").eq("id", id).maybeSingle()),
+    unwrap<ProductImage[]>(
+      supabase.from("product_images").select("*").eq("product_id", id).order("sort_order"),
+    ),
+  ]);
   if (!product) return null;
-  const images = await unwrap<ProductImage[]>(
-    supabase.from("product_images").select("*").eq("product_id", id).order("sort_order"),
-  );
   return { ...product, images };
 }
 
@@ -187,29 +241,29 @@ export async function deleteProduct(id: string) {
 }
 
 export async function addProductImages(productId: string, files: File[], startOrder: number) {
-  const added: ProductImage[] = [];
-  let order = startOrder;
-  for (const file of files) {
-    const { path, publicUrl } = await uploadProductImage(productId, file);
-    const row = await unwrap<ProductImage>(
-      getSupabase()
-        .from("product_images")
-        .insert({
-          product_id: productId,
-          image_url: publicUrl,
-          storage_path: path,
-          sort_order: order,
-        })
-        .select()
-        .single(),
-    ).catch(async (err) => {
-      await removeStorageFiles([path]).catch(() => undefined);
-      throw err;
-    });
-    added.push(row);
-    order += 1;
-  }
-  return added;
+  // One file at a time meant every upload waited for the previous round trip
+  // to finish. The files don't depend on each other, so they go up together
+  // and sort_order is decided up front to keep the order stable.
+  return Promise.all(
+    files.map(async (file, index) => {
+      const { path, publicUrl } = await uploadProductImage(productId, file);
+      return unwrap<ProductImage>(
+        getSupabase()
+          .from("product_images")
+          .insert({
+            product_id: productId,
+            image_url: publicUrl,
+            storage_path: path,
+            sort_order: startOrder + index,
+          })
+          .select()
+          .single(),
+      ).catch(async (err) => {
+        await removeStorageFiles([path]).catch(() => undefined);
+        throw err;
+      });
+    }),
+  );
 }
 
 export async function deleteProductImage(image: ProductImage) {
@@ -221,12 +275,17 @@ export async function deleteProductImage(image: ProductImage) {
 // Save a new order for the images (first = main image).
 export async function reorderProductImages(images: ProductImage[]) {
   const supabase = getSupabase();
-  for (const [index, image] of images.entries()) {
-    if (image.sort_order === index) continue;
-    const { error } = await supabase
-      .from("product_images")
-      .update({ sort_order: index })
-      .eq("id", image.id);
-    if (error) throw error;
-  }
+  // Dragging five images used to cost five round trips one after another.
+  // The updates are independent, so they all leave at once.
+  const changed = images
+    .map((image, index) => ({ image, index }))
+    .filter(({ image, index }) => image.sort_order !== index);
+  if (changed.length === 0) return;
+  const results = await Promise.all(
+    changed.map(({ image, index }) =>
+      supabase.from("product_images").update({ sort_order: index }).eq("id", image.id),
+    ),
+  );
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw failed.error;
 }

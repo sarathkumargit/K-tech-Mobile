@@ -20,7 +20,7 @@ import {
   adminListProducts,
   deleteProduct,
   updateProduct,
-  type Product,
+  type ProductListItem,
 } from "@/services/productService";
 
 export const Route = createFileRoute("/admin/products/")({ component: ProductsPage });
@@ -46,7 +46,7 @@ function ProductsPage() {
   };
 
   const toggleActive = useMutation({
-    mutationFn: (p: Product) => updateProduct(p.id, { is_active: !p.is_active }),
+    mutationFn: (p: ProductListItem) => updateProduct(p.id, { is_active: !p.is_active }),
     onSuccess: (p) => {
       toast.success(
         p.is_active ? `${p.name} is visible in the shop` : `${p.name} is hidden from the shop`,

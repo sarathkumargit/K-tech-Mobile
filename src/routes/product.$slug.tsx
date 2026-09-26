@@ -141,6 +141,7 @@ function ProductPage({ product }: { product: ProductWithImages }) {
               src={gallery[activeImage] ?? null}
               alt={product.name}
               className="h-full w-full object-cover"
+              priority
             />
             {discount > 0 && (
               <span className="absolute left-3 top-3 rounded-full bg-cozy-burnt px-3 py-1 text-xs font-bold uppercase text-primary-foreground">

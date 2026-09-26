@@ -1,11 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import { ImageOff, ShoppingBag } from "lucide-react";
-import type { Product } from "@/services/productService";
+import type { ProductListItem } from "@/services/productService";
 import { useCart } from "@/hooks/use-cart";
 import { CountdownTimer } from "@/components/countdown-timer";
 import { ProductPrice, discountPercent } from "@/components/product-price";
 
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({ product }: { product: ProductListItem }) {
   const { add, isAdding } = useCart();
   const discount = discountPercent(product);
   const inStock = product.stock_quantity > 0;
@@ -92,10 +92,18 @@ export function ProductImage({
   src,
   alt,
   className,
+  priority = false,
 }: {
   src: string | null;
   alt: string;
   className?: string;
+  /**
+   * Set on the one image that is the main thing on the screen — the big
+   * picture on a product page. Lazy loading is right for a grid, but on the
+   * largest image above the fold it makes the browser wait for layout before
+   * it even asks for the file, which is exactly the wrong place to wait.
+   */
+  priority?: boolean;
 }) {
   if (!src) {
     return (
@@ -108,7 +116,9 @@ export function ProductImage({
     <img
       src={src}
       alt={alt}
-      loading="lazy"
+      loading={priority ? "eager" : "lazy"}
+      fetchPriority={priority ? "high" : undefined}
+      decoding={priority ? "sync" : "async"}
       className={
         className ??
         "h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"

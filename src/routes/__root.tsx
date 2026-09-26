@@ -20,6 +20,7 @@ import { RepairModal } from "../components/repair-modal";
 import { Toaster } from "../components/ui/sonner";
 import { MobileNav, WhatsAppFab } from "../components/mobile-nav";
 import { supabaseOrigin } from "../lib/supabase";
+import { heroOrigin } from "../lib/hero-image";
 
 function NotFoundComponent() {
   return (
@@ -108,10 +109,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         type: "image/svg+xml",
         href: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23BF360C'/%3E%3Ctext x='16' y='22' font-family='Arial' font-weight='700' font-size='18' fill='white' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E",
       },
-      // Open the connection to Supabase while the page is still loading.
+      // Open the connection to Supabase while the page is still loading, so the
+      // first data request doesn't pay for a DNS lookup, a TCP handshake and a
+      // TLS handshake before it can even ask its question.
       ...(supabaseOrigin
         ? [{ rel: "preconnect", href: supabaseOrigin, crossOrigin: "anonymous" as const }]
         : []),
+      // Same idea for the hero picture while it still lives on another server.
+      // Disappears by itself once src/assets/hero.webp exists.
+      ...(heroOrigin ? [{ rel: "preconnect", href: heroOrigin }] : []),
       {
         rel: "preload",
         href: "/fonts/plus-jakarta-sans.woff2",

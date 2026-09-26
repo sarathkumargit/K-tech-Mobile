@@ -33,7 +33,18 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
-    defaultPreloadStaleTime: 0,
+    // Start loading a page when the pointer lands on its link, not when the
+    // click happens. A visitor takes a few hundred milliseconds between
+    // hovering and clicking, and on a far-away connection that is roughly one
+    // round trip — so the page is often already there by the time they click.
+    // On a phone this fires on touch-start, which still buys a little.
+    defaultPreload: "intent",
+    // 100ms of hover, so sweeping the mouse across a grid of product cards
+    // doesn't fire a query for every card it passes over.
+    defaultPreloadDelay: 100,
+    // Let a preloaded page's data actually be used on the click instead of
+    // being thrown away and fetched again. Matches the 30s staleTime above.
+    defaultPreloadStaleTime: 30_000,
   });
 
   return router;

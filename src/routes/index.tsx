@@ -16,22 +16,16 @@ import { CountdownTimer } from "@/components/countdown-timer";
 import { EmptyState, ErrorState } from "@/components/states";
 import { useRepair } from "@/components/repair-context";
 import { useSiteSettings } from "@/hooks/use-site-settings";
+import { HERO_IMAGE } from "@/lib/hero-image";
 import { qk } from "@/lib/query-keys";
 import { getCategories } from "@/services/categoryService";
-import { getFeaturedProducts, getOfferProducts, type Product } from "@/services/productService";
+import {
+  getFeaturedProducts,
+  getOfferProducts,
+  type ProductListItem,
+} from "@/services/productService";
 
-// Hero picture: put your own file at src/assets/hero.webp (or .jpg / .png)
-// and it is used automatically (bundled, cached, served from your domain).
-// Until then the original hosted image is used.
-const localHero = Object.values(
-  import.meta.glob<string>("../assets/hero.{webp,jpg,jpeg,png}", {
-    eager: true,
-    import: "default",
-  }),
-)[0];
-const HERO_IMAGE =
-  localHero ??
-  "https://vibe.filesafe.space/1790084348979734783/assets/15d93eef-8043-4c34-bb25-ce6d12e12ba3.png";
+// Hero picture: see src/lib/hero-image.ts for how to replace it with your own.
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -353,7 +347,7 @@ function ContactTile({ label, value }: { label: string; value: string }) {
   );
 }
 
-function OfferCard({ product }: { product: Product }) {
+function OfferCard({ product }: { product: ProductListItem }) {
   const discount = discountPercent(product);
   return (
     <Link

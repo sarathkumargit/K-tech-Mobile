@@ -5,6 +5,33 @@
 /fonts/*
   Cache-Control: public, max-age=2592000
 
+# The HTML shell. Every page is the same index.html, so the paths are listed
+# one by one rather than as /*, which would also match /assets/* and fight
+# with the immutable rule above.
+#
+# max-age=0 keeps the browser checking, so a new deploy shows up immediately.
+# s-maxage=60 lets Cloudflare answer from the nearest data centre for a minute
+# without asking the origin. stale-while-revalidate serves the copy it already
+# has while it fetches a fresh one in the background — so a visitor never waits
+# for that check.
+/
+  Cache-Control: public, max-age=0, s-maxage=60, stale-while-revalidate=86400
+
+/index.html
+  Cache-Control: public, max-age=0, s-maxage=60, stale-while-revalidate=86400
+
+/shop
+  Cache-Control: public, max-age=0, s-maxage=60, stale-while-revalidate=86400
+
+/product/*
+  Cache-Control: public, max-age=0, s-maxage=60, stale-while-revalidate=86400
+
+/about
+  Cache-Control: public, max-age=0, s-maxage=60, stale-while-revalidate=86400
+
+/contact
+  Cache-Control: public, max-age=0, s-maxage=60, stale-while-revalidate=86400
+
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
