@@ -1,7 +1,8 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, ImagePlus, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Camera, ImagePlus, Loader2, Trash2 } from "lucide-react";
+import { CameraCapture, cameraSupported } from "@/components/admin/camera-capture";
 import { Panel, btnSecondary } from "@/components/admin/ui";
 import { readableError } from "@/lib/supabase";
 import {
@@ -12,6 +13,12 @@ import {
 } from "@/services/productService";
 import { validateImageFile } from "@/services/storageService";
 
+// Formats the browser and validateImageFile() both accept. Listing them
+// instead of image/* is deliberate: because HEIC is not on the list, an
+// iPhone converts a Photos pick to JPEG on the way out instead of handing
+// over a .heic file the shop can't display.
+const ACCEPT = "image/jpeg,image/png,image/webp,image/avif,image/gif";
+
 // Upload / order / delete product photos (Supabase Storage + product_images).
 export function ProductImagesManager({
   productId,
@@ -21,16 +28,23 @@ export function ProductImagesManager({
   images: ProductImage[];
 }) {
   const queryClient = useQueryClient();
-  const input = useRef<HTMLInputElement>(null);
+  const galleryInput = useRef<HTMLInputElement>(null);
+  const cameraInput = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  // Decided after mount, because it reads from `navigator` and the shell is
+  // pre-rendered. When getUserMedia is there (every current browser on
+  // https) the camera opens inside the page; otherwise fall back to the
+  // capture input, which at least gets the camera on a phone.
+  const [useLiveCamera, setUseLiveCamera] = useState(false);
+  useEffect(() => setUseLiveCamera(cameraSupported()), []);
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["admin"] });
     void queryClient.invalidateQueries({ queryKey: ["products"] });
   };
 
-  const upload = async (fileList: FileList | null) => {
-    const files = Array.from(fileList ?? []);
+  const upload = async (picked: FileList | File[] | null) => {
+    const files = Array.from(picked ?? []);
     if (files.length === 0) return;
     const problems = files.map(validateImageFile).filter(Boolean);
     if (problems.length) {
@@ -46,7 +60,9 @@ export function ProductImagesManager({
       toast.error(readableError(err, "Upload failed."));
     } finally {
       setBusy(null);
-      if (input.current) input.current.value = "";
+      // Clear both, so picking the same file again still fires onChange.
+      if (galleryInput.current) galleryInput.current.value = "";
+      if (cameraInput.current) cameraInput.current.value = "";
     }
   };
 
@@ -82,8 +98,8 @@ export function ProductImagesManager({
   return (
     <Panel title="Photos">
       <p className="-mt-2 mb-4 text-xs text-muted-foreground">
-        JPG, PNG, WebP, AVIF or GIF. Large photos are shrunk automatically. The first photo is the
-        main image.
+        Pick photos from the gallery or take one with the camera. JPG, PNG, WebP, AVIF or GIF. Large
+        photos are shrunk automatically. The first photo is the main image.
       </p>
       {images.length > 0 && (
         <ul className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -134,27 +150,53 @@ export function ProductImagesManager({
           ))}
         </ul>
       )}
+      {/* Pick from the gallery: several at once. */}
       <input
-        ref={input}
+        ref={galleryInput}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+        accept={ACCEPT}
         multiple
         hidden
         onChange={(e) => void upload(e.target.files)}
       />
-      <button
-        type="button"
-        onClick={() => input.current?.click()}
-        disabled={busy !== null}
-        className={btnSecondary}
-      >
-        {busy === "upload" ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+      {/* capture="environment" opens the rear camera straight away instead of
+          the file browser. One shot at a time, so no `multiple` here. */}
+      <input
+        ref={cameraInput}
+        type="file"
+        accept={ACCEPT}
+        capture="environment"
+        hidden
+        onChange={(e) => void upload(e.target.files)}
+      />
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => galleryInput.current?.click()}
+          disabled={busy !== null}
+          className={btnSecondary}
+        >
+          {busy === "upload" ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <ImagePlus className="h-4 w-4" />
+          )}
+          {busy === "upload" ? "Uploading…" : "Choose from gallery"}
+        </button>
+        {useLiveCamera ? (
+          <CameraCapture disabled={busy !== null} onCapture={(file) => void upload([file])} />
         ) : (
-          <ImagePlus className="h-4 w-4" />
+          <button
+            type="button"
+            onClick={() => cameraInput.current?.click()}
+            disabled={busy !== null}
+            className={btnSecondary}
+          >
+            <Camera className="h-4 w-4" />
+            Take a photo
+          </button>
         )}
-        {busy === "upload" ? "Uploading…" : "Upload photos"}
-      </button>
+      </div>
     </Panel>
   );
 }
