@@ -20,7 +20,7 @@ import { RepairModal } from "../components/repair-modal";
 import { Toaster } from "../components/ui/sonner";
 import { MobileNav, WhatsAppFab } from "../components/mobile-nav";
 import { supabaseOrigin } from "../lib/supabase";
-import { heroOrigin } from "../lib/hero-image";
+import { HERO_IMAGE, heroOrigin } from "../lib/hero-image";
 
 function NotFoundComponent() {
   return (
@@ -115,9 +115,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       ...(supabaseOrigin
         ? [{ rel: "preconnect", href: supabaseOrigin, crossOrigin: "anonymous" as const }]
         : []),
-      // Same idea for the hero picture while it still lives on another server.
-      // Disappears by itself once src/assets/hero.webp exists.
-      ...(heroOrigin ? [{ rel: "preconnect", href: heroOrigin }] : []),
+      // Bundled hero: preload it so the browser fetches it in parallel with JS.
+      // External hero (legacy fallback): preconnect to cut the cold-start penalty.
+      ...(heroOrigin
+        ? [{ rel: "preconnect", href: heroOrigin }]
+        : HERO_IMAGE
+        ? [{ rel: "preload", href: HERO_IMAGE, as: "image" }]
+        : []),
       {
         rel: "preload",
         href: "/fonts/plus-jakarta-sans.woff2",

@@ -9,12 +9,20 @@
 // handshake before a single byte of the biggest image on the page arrives.
 // The <link rel="preconnect"> in __root.tsx softens that, but replacing the
 // file is the real fix.
-const localHero = Object.values(
-  import.meta.glob<string>("../assets/hero.{webp,jpg,jpeg,png}", {
-    eager: true,
-    import: "default",
-  }),
-)[0];
+// Check WebP first (smallest), then fall back to other formats.
+const localHero =
+  Object.values(
+    import.meta.glob<string>("../assets/hero.webp", {
+      eager: true,
+      import: "default",
+    }),
+  )[0] ??
+  Object.values(
+    import.meta.glob<string>("../assets/hero.{jpg,jpeg,png}", {
+      eager: true,
+      import: "default",
+    }),
+  )[0];
 
 export const HERO_IMAGE =
   localHero ??
