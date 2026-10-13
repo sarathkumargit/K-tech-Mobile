@@ -25,17 +25,26 @@ function AuthCallback() {
   const [timedOut, setTimedOut] = useState(false);
   const [exchangeError, setExchangeError] = useState<string | null>(null);
 
-  // PKCE flow: Supabase sends a ?code= that must be exchanged for a session.
-  // detectSessionInUrl alone does not exchange PKCE codes — we do it explicitly.
+  // Implicit flow: Supabase puts the token in the URL hash (#access_token=...&type=recovery).
+  // detectSessionInUrl:true picks it up automatically. For password-reset links
+  // we redirect to /reset-password so the user can enter a new password.
   useEffect(() => {
+    const hash = new URLSearchParams(window.location.hash.replace("#", ""));
+    const type = hash.get("type");
+    if (type === "recovery") {
+      navigate({ to: "/reset-password", replace: true });
+      return;
+    }
+    // Legacy PKCE code path (kept as fallback — remove once all issued links expire).
     const code = new URLSearchParams(window.location.search).get("code");
-    if (!code) return;
-    getSupabase()
-      .auth.exchangeCodeForSession(code)
-      .then(({ error }) => {
-        if (error) setExchangeError(error.message);
-      });
-  }, []);
+    if (code) {
+      getSupabase()
+        .auth.exchangeCodeForSession(code)
+        .then(({ error }) => {
+          if (error) setExchangeError(error.message);
+        });
+    }
+  }, [navigate]);
 
   useEffect(() => {
     if (user) navigate({ to: safeRedirect(next, "/account"), replace: true });

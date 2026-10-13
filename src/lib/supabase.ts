@@ -48,7 +48,11 @@ export function getSupabase(): TypedSupabaseClient {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        flowType: "pkce",
+        // "implicit" puts the token in the URL hash so password-reset and
+        // magic-link emails work even when Gmail opens them in a new tab.
+        // PKCE requires the code verifier to be in the same localStorage
+        // session where the flow started, which breaks cross-tab email links.
+        flowType: "implicit",
       },
     });
   }
