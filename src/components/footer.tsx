@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import LOGO from "@/assets/logo.jpg";
 import { MessageCircle, Wrench } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useRepair } from "@/components/repair-context";
@@ -23,9 +24,7 @@ export function Footer() {
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-cozy-orange to-cozy-light-peach">
-                <span className="font-display text-lg text-primary-foreground">K</span>
-              </div>
+              <img src={LOGO} alt="K-Tech" className="h-9 w-9 rounded-xl object-cover" />
               <span className="font-display text-2xl tracking-tight">K-TECH</span>
             </div>
             <p className="mt-4 max-w-xs text-sm text-primary-foreground/90">

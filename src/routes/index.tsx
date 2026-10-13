@@ -1,7 +1,9 @@
+import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import {
   ArrowRight,
+  SlidersHorizontal,
   Truck,
   ShieldCheck,
   RotateCcw,
@@ -19,10 +21,13 @@ import { useSiteSettings } from "@/hooks/use-site-settings";
 import { HERO_IMAGE } from "@/lib/hero-image";
 import { qk } from "@/lib/query-keys";
 import { getCategories } from "@/services/categoryService";
+import { cn } from "@/lib/utils";
 import {
   getFeaturedProducts,
   getOfferProducts,
+  getProducts,
   type ProductListItem,
+  type ProductSort,
 } from "@/services/productService";
 
 // Hero picture: see src/lib/hero-image.ts for how to replace it with your own.
@@ -51,18 +56,90 @@ export const Route = createFileRoute("/")({
 function Index() {
   const { open: openRepair } = useRepair();
   const { settings } = useSiteSettings();
+  const [mobileCategory, setMobileCategory] = useState<string | undefined>(undefined);
+  const [mobileSort, setMobileSort] = useState<ProductSort>("newest");
+
   const categories = useQuery({ queryKey: qk.categories, queryFn: getCategories });
   const featured = useQuery({ queryKey: qk.featured, queryFn: () => getFeaturedProducts(8) });
   const offers = useQuery({ queryKey: qk.offers, queryFn: () => getOfferProducts(12) });
+  const mobileFilters = useMemo(
+    () => ({
+      ...(mobileCategory === "offers"
+        ? { offersOnly: true as const }
+        : mobileCategory
+        ? { categorySlug: mobileCategory }
+        : {}),
+      sort: mobileSort,
+    }),
+    [mobileCategory, mobileSort],
+  );
+  const mobileProducts = useQuery({
+    queryKey: qk.products(mobileFilters),
+    queryFn: () => getProducts(mobileFilters),
+    placeholderData: keepPreviousData,
+  });
 
   return (
     <div>
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-cozy-peach via-cozy-light-peach to-cozy-orange">
-        <div className="hero-glow absolute inset-0" />
-        <div className="relative mx-auto grid max-w-7xl items-center gap-8 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:px-8 lg:py-20">
-          <div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-cozy-burnt/15 px-3.5 py-1.5 text-xs font-bold uppercase tracking-widest text-cozy-burnt">
+      {/* Hero — MOBILE: background image with bottom text overlay */}
+      <section
+        className="sm:hidden relative overflow-hidden"
+        style={{
+          backgroundImage: `url(${HERO_IMAGE})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center center",
+          minHeight: "100svh",
+        }}
+      >
+        {/* Bottom gradient so text is always readable */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#fce8d5] via-[#fce8d5]/60 via-40% to-transparent" />
+
+        {/* Content — centered, pinned to top */}
+        <div className="absolute inset-x-0 top-0 px-5 pt-20 text-center">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-cozy-burnt/30 bg-cozy-burnt/10 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-cozy-burnt">
+            <Flame className="h-3 w-3" />
+            {offers.data && offers.data.length > 0
+              ? `${offers.data.length} offer${offers.data.length === 1 ? "" : "s"} live now`
+              : "Phones · Accessories · Repairs"}
+          </span>
+          <h1 className="mt-3 font-display text-4xl leading-[1.05] tracking-tight text-foreground">
+            Your Trusted
+            <br />
+            <span className="text-cozy-burnt">Mobile Phone</span>
+            <br />
+            Shop
+          </h1>
+          <p className="mt-2 text-sm text-foreground/70">
+            Brand new &amp; used phones, accessories, and expert repairs — all under one roof.
+          </p>
+          <div className="mt-5 flex flex-col gap-3">
+            <Link
+              to="/shop"
+              className="flex items-center justify-center gap-2 rounded-2xl bg-cozy-burnt py-4 text-base font-bold text-white shadow-lg active:scale-95"
+            >
+              Visit Shop
+              <ArrowRight className="h-5 w-5" />
+            </Link>
+            <button
+              onClick={openRepair}
+              className="flex items-center justify-center gap-2 rounded-2xl border-2 border-cozy-burnt/50 bg-white/70 py-3.5 text-sm font-semibold text-cozy-burnt"
+            >
+              <Wrench className="h-4 w-4" />
+              Book a Repair
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Hero — DESKTOP: background image + gradient overlay */}
+      <section
+        className="relative hidden overflow-hidden sm:block"
+        style={{ backgroundImage: `url(${HERO_IMAGE})`, backgroundSize: "cover", backgroundPosition: "center top" }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-[#fce8d5] from-30% via-[#fce8d5]/50 via-50% to-transparent" />
+        <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-24">
+          <div className="max-w-lg">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-cozy-burnt/30 bg-cozy-burnt/10 px-3.5 py-1.5 text-xs font-bold uppercase tracking-widest text-cozy-burnt">
               <Flame className="h-3.5 w-3.5" />
               {offers.data && offers.data.length > 0
                 ? `${offers.data.length} offer${offers.data.length === 1 ? "" : "s"} live now`
@@ -71,39 +148,29 @@ function Index() {
             <h1 className="mt-5 font-display text-5xl leading-[1.05] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
               Your Trusted
               <br />
-              Mobile Phone Shop
+              <span className="text-cozy-burnt">Mobile Phone</span>
+              <br />
+              Shop
             </h1>
-            <p className="mt-5 max-w-md text-base text-foreground/75 sm:text-lg">
+            <p className="mt-5 max-w-md text-base text-foreground/70 sm:text-lg">
               Brand new &amp; used phones, accessories, and expert repairs — all under one roof.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link
                 to="/shop"
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-semibold text-primary-foreground transition-transform hover:scale-105"
+                className="inline-flex items-center gap-2 rounded-xl bg-cozy-burnt px-6 py-3 font-semibold text-white shadow-md transition-transform hover:scale-105"
               >
                 Shop Now
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <button
                 onClick={openRepair}
-                className="inline-flex items-center gap-2 rounded-xl border border-cozy-burnt/40 bg-card/70 px-6 py-3 font-semibold text-cozy-burnt transition-colors hover:bg-card"
+                className="inline-flex items-center gap-2 rounded-xl border border-cozy-burnt/50 bg-white/50 px-6 py-3 font-semibold text-cozy-burnt transition-colors hover:bg-white/80"
               >
                 <Wrench className="h-4 w-4" />
                 Book a Repair
               </button>
             </div>
-          </div>
-
-          <div className="relative">
-            <img
-              src={HERO_IMAGE}
-              alt="Phones and accessories at K-Tech"
-              width={1200}
-              height={900}
-              fetchPriority="high"
-              decoding="async"
-              className="h-auto w-full rounded-3xl object-cover shadow-2xl shadow-cozy-burnt/20"
-            />
           </div>
         </div>
       </section>
@@ -130,8 +197,70 @@ function Index() {
         </div>
       </section>
 
-      {/* Categories (from the categories table) */}
-      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      {/* Mobile shop: full product listing with category chips + sort — mobile only */}
+      <section className="sm:hidden px-4 pt-6 pb-4">
+        {/* Category chips */}
+        <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-2">
+          <MobileChip active={!mobileCategory} label="All" onClick={() => setMobileCategory(undefined)} />
+          <MobileChip active={mobileCategory === "offers"} label="Offers" onClick={() => setMobileCategory("offers")} />
+          {categories.data?.map((cat) => (
+            <MobileChip key={cat.id} active={mobileCategory === cat.slug} label={cat.name} onClick={() => setMobileCategory(cat.slug)} />
+          ))}
+        </div>
+        {/* Sort */}
+        <div className="mt-3 flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-muted-foreground">
+            <SlidersHorizontal className="h-4 w-4" />
+            <span className="text-xs font-medium uppercase tracking-wide">Sort</span>
+          </div>
+          <div className="flex gap-2">
+            {[
+              { key: "newest", label: "Newest" },
+              { key: "price_asc", label: "Low" },
+              { key: "price_desc", label: "High" },
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setMobileSort(key as ProductSort)}
+                className={cn(
+                  "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                  mobileSort === key
+                    ? "bg-secondary text-secondary-foreground"
+                    : "text-muted-foreground",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {/* Product grid */}
+        <div className={cn("mt-5 transition-opacity", mobileProducts.isPlaceholderData && "opacity-60")}>
+          {mobileProducts.isLoading ? (
+            <ProductGridSkeleton />
+          ) : mobileProducts.error ? (
+            <ErrorState
+              error={mobileProducts.error}
+              title="Unable to load products"
+              onRetry={() => mobileProducts.refetch()}
+            />
+          ) : mobileProducts.data && mobileProducts.data.length > 0 ? (
+            <div className="grid grid-cols-2 gap-3">
+              {mobileProducts.data.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="No products found"
+              description="Try a different category."
+            />
+          )}
+        </div>
+      </section>
+
+      {/* Categories — desktop only */}
+      <section className="mx-auto hidden max-w-7xl px-4 py-12 sm:block sm:px-6 lg:px-8">
         <SectionHeader title="Shop by Category" subtitle="Find exactly what you're looking for." />
         <div className="mt-6">
           {categories.isLoading ? (
@@ -208,8 +337,8 @@ function Index() {
         </section>
       )}
 
-      {/* Featured products */}
-      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      {/* Featured products — desktop only */}
+      <section className="mx-auto hidden max-w-7xl px-4 py-12 sm:block sm:px-6 lg:px-8">
         <SectionHeader
           title="Featured Products"
           subtitle="Hand-picked phones and accessories."
@@ -274,6 +403,30 @@ function Index() {
         </section>
       )}
     </div>
+  );
+}
+
+function MobileChip({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors",
+        active
+          ? "bg-primary text-primary-foreground"
+          : "border border-border bg-card text-muted-foreground",
+      )}
+    >
+      {label}
+    </button>
   );
 }
 

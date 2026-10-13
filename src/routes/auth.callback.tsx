@@ -6,6 +6,7 @@ import { z } from "zod";
 import { LoadingState } from "@/components/states";
 import { safeRedirect } from "@/components/require-auth";
 import { useAuth } from "@/lib/auth-context";
+import { getSupabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/auth/callback")({
   validateSearch: z
@@ -22,6 +23,19 @@ function AuthCallback() {
   const { next, error_description } = Route.useSearch();
   const navigate = useNavigate();
   const [timedOut, setTimedOut] = useState(false);
+  const [exchangeError, setExchangeError] = useState<string | null>(null);
+
+  // PKCE flow: Supabase sends a ?code= that must be exchanged for a session.
+  // detectSessionInUrl alone does not exchange PKCE codes — we do it explicitly.
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("code");
+    if (!code) return;
+    getSupabase()
+      .auth.exchangeCodeForSession(code)
+      .then(({ error }) => {
+        if (error) setExchangeError(error.message);
+      });
+  }, []);
 
   useEffect(() => {
     if (user) navigate({ to: safeRedirect(next, "/account"), replace: true });
@@ -32,12 +46,12 @@ function AuthCallback() {
     return () => clearTimeout(t);
   }, []);
 
-  if (error_description || (timedOut && !loading && !user)) {
+  if (exchangeError || error_description || (timedOut && !loading && !user)) {
     return (
       <div className="mx-auto max-w-md px-4 py-20 text-center">
         <h1 className="font-display text-3xl text-foreground">Sign-in didn't finish</h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          {error_description ?? "The link may have expired or was already used. Please try again."}
+          {exchangeError ?? error_description ?? "The link may have expired or was already used. Please try again."}
         </p>
         <Link
           to="/login"
