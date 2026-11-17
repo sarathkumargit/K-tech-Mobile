@@ -22,6 +22,7 @@ import { Route as ShopRouteImport } from './routes/shop'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
+import { Route as AdminLendRouteImport } from './routes/admin.lend'
 import { Route as AdminOffersRouteImport } from './routes/admin.offers'
 import { Route as AdminRepairsRouteImport } from './routes/admin.repairs'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
@@ -100,6 +101,11 @@ const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
   path: '/categories',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminLendRoute = AdminLendRouteImport.update({
+  id: '/lend',
+  path: '/lend',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminOffersRoute = AdminOffersRouteImport.update({
   id: '/offers',
   path: '/offers',
@@ -174,6 +180,7 @@ export interface FileRoutesByFullPath {
   '/shop': typeof ShopRoute
   '/signup': typeof SignupRoute
   '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/lend': typeof AdminLendRoute
   '/admin/offers': typeof AdminOffersRoute
   '/admin/repairs': typeof AdminRepairsRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -200,6 +207,7 @@ export interface FileRoutesByTo {
   '/shop': typeof ShopRoute
   '/signup': typeof SignupRoute
   '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/lend': typeof AdminLendRoute
   '/admin/offers': typeof AdminOffersRoute
   '/admin/repairs': typeof AdminRepairsRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -228,6 +236,7 @@ export interface FileRoutesById {
   '/shop': typeof ShopRoute
   '/signup': typeof SignupRoute
   '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/lend': typeof AdminLendRoute
   '/admin/offers': typeof AdminOffersRoute
   '/admin/repairs': typeof AdminRepairsRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -257,6 +266,7 @@ export interface FileRouteTypes {
     | '/shop'
     | '/signup'
     | '/admin/categories'
+    | '/admin/lend'
     | '/admin/offers'
     | '/admin/repairs'
     | '/admin/settings'
@@ -283,6 +293,7 @@ export interface FileRouteTypes {
     | '/shop'
     | '/signup'
     | '/admin/categories'
+    | '/admin/lend'
     | '/admin/offers'
     | '/admin/repairs'
     | '/admin/settings'
@@ -310,6 +321,7 @@ export interface FileRouteTypes {
     | '/shop'
     | '/signup'
     | '/admin/categories'
+    | '/admin/lend'
     | '/admin/offers'
     | '/admin/repairs'
     | '/admin/settings'
@@ -434,6 +446,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCategoriesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/lend': {
+      id: '/admin/lend'
+      path: '/lend'
+      fullPath: '/admin/lend'
+      preLoaderRoute: typeof AdminLendRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/offers': {
       id: '/admin/offers'
       path: '/offers'
@@ -523,6 +542,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminCategoriesRoute: typeof AdminCategoriesRoute
+  AdminLendRoute: typeof AdminLendRoute
   AdminOffersRoute: typeof AdminOffersRoute
   AdminRepairsRoute: typeof AdminRepairsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
@@ -538,6 +558,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminCategoriesRoute: AdminCategoriesRoute,
+  AdminLendRoute: AdminLendRoute,
   AdminOffersRoute: AdminOffersRoute,
   AdminRepairsRoute: AdminRepairsRoute,
   AdminSettingsRoute: AdminSettingsRoute,

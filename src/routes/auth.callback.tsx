@@ -31,6 +31,15 @@ function AuthCallback() {
   useEffect(() => {
     const hash = new URLSearchParams(window.location.hash.replace("#", ""));
     const type = hash.get("type");
+
+    // Security: strip the token/code from the URL immediately so it doesn't
+    // sit in browser history, get sent as a Referer header, or get captured
+    // by third-party scripts. Supabase (detectSessionInUrl: true) has already
+    // read the hash synchronously before this effect runs.
+    if (window.location.hash) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+
     if (type === "recovery") {
       navigate({ to: "/reset-password", replace: true });
       return;
@@ -42,6 +51,8 @@ function AuthCallback() {
         .auth.exchangeCodeForSession(code)
         .then(({ error }) => {
           if (error) setExchangeError(error.message);
+          // Strip the ?code= param too once it has been exchanged.
+          window.history.replaceState(null, "", window.location.pathname);
         });
     }
   }, [navigate]);

@@ -38,8 +38,8 @@ function SignupPage() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) {
-      toast.error("Use at least 6 characters for your password.");
+    if (password.length < 8) {
+      toast.error("Use at least 8 characters for your password.");
       return;
     }
     setLoading(true);
@@ -112,12 +112,12 @@ function SignupPage() {
           <span className="mb-1.5 block text-sm font-medium text-foreground">Password</span>
           <input
             required
-            minLength={6}
+            minLength={8}
             type="password"
             autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="At least 6 characters"
+            placeholder="At least 8 characters"
             className={inputCls}
           />
         </label>

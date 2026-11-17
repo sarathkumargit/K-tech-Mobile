@@ -74,9 +74,14 @@ function CheckoutPage() {
     (k: keyof AddressForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm((f) => ({ ...f, [k]: e.target.value }));
 
+  // Phone must contain 7-15 digits (allows +, spaces, dashes, parentheses).
+  // Rejects all-same-digit fakes like "1111111" or pure letters.
+  const phoneValid = /^[+]?[()\s\-\d]{7,20}$/.test(form.phone.trim()) &&
+    (form.phone.replace(/\D/g, "").length >= 7);
+
   const valid =
     form.full_name.trim().length >= 2 &&
-    form.phone.trim().length >= 7 &&
+    phoneValid &&
     form.address_line1.trim().length >= 3 &&
     form.city.trim().length >= 2;
 

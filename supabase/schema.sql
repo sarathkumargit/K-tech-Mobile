@@ -506,7 +506,7 @@ create table if not exists public.orders (
   total             numeric(12, 2) not null check (total >= 0),
   shipping_address  jsonb not null check (jsonb_typeof(shipping_address) = 'object'),
   customer_email    text,
-  notes             text,
+  notes             text check (notes is null or length(notes) <= 500),
   created_at        timestamptz not null default now(),
   updated_at        timestamptz not null default now()
 );
@@ -652,6 +652,15 @@ begin
         using errcode = '22023';
     end if;
   end loop;
+
+  -- Validate phone: 7-20 chars, digits/spaces/+/-/(/) only
+  if not (
+    (p_shipping_address ->> 'phone') ~ '^[+]?[() \-0-9]{7,20}$'
+    and length(regexp_replace(p_shipping_address ->> 'phone', '[^0-9]', '', 'g')) >= 7
+  ) then
+    raise exception 'Please enter a valid phone number (7-20 digits).'
+      using errcode = '22023';
+  end if;
 
   select id into v_cart_id from public.carts where user_id = v_user_id;
   if v_cart_id is null or not exists (select 1 from public.cart_items where cart_id = v_cart_id) then
@@ -844,7 +853,7 @@ grant select on public.orders, public.order_items to authenticated;
 grant update (status, notes, shipping_address) on public.orders to authenticated;
 
 -- Repair requests: anyone can submit; admins read/manage
-grant insert on public.repair_requests to anon, authenticated;
+grant insert on public.repair_requests to authenticated;  -- anon removed: sign-in required
 grant select, update, delete on public.repair_requests to authenticated;
 
 -- Functions
@@ -1064,9 +1073,11 @@ create policy "order_items: read own or admin" on public.order_items
 
 -- ---------- repair_requests ----------
 drop policy if exists "repair_requests: anyone submits" on public.repair_requests;
-create policy "repair_requests: anyone submits" on public.repair_requests
-  for insert to anon, authenticated
-  with check (status = 'new' and (user_id is null or user_id = auth.uid()));
+drop policy if exists "repair_requests: sign-in to submit" on public.repair_requests;
+-- Require sign-in to submit a repair request (prevents anonymous spam).
+create policy "repair_requests: sign-in to submit" on public.repair_requests
+  for insert to authenticated
+  with check (status = 'new' and user_id = auth.uid());
 
 drop policy if exists "repair_requests: admin read" on public.repair_requests;
 create policy "repair_requests: admin read" on public.repair_requests
@@ -1162,6 +1173,18 @@ insert into public.categories (name, slug, sort_order) values
   ('Other Accessories', 'other-accessories', 50)
 on conflict (slug) do nothing;
 
+
+-- =============================================================================
+-- 19. Schema hardening — ALTER TABLE for existing databases
+--     These are idempotent and safe to run on a live database.
+-- =============================================================================
+
+-- Cap free-text notes on orders (prevents oversized payload injection).
+alter table public.orders
+  drop constraint if exists orders_notes_length;
+alter table public.orders
+  add constraint orders_notes_length
+  check (notes is null or length(notes) <= 500);
 
 -- =============================================================================
 -- NEXT STEP — make yourself an admin (run once, after you have signed up):

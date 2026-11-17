@@ -94,6 +94,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "K-Tech — your trusted mobile phone shop. Brand new & used phones, accessories, chargers, and expert phone repair. Shop the best deals today.",
       },
       { name: "author", content: "K-Tech" },
+      // Security: prevent the URL (which briefly contains an auth token
+      // in the hash during OAuth) from leaking via the Referer header.
+      { name: "referrer", content: "strict-origin-when-cross-origin" },
       { property: "og:title", content: "K-Tech — Mobile Phones, Accessories & Repairs" },
       {
         property: "og:description",

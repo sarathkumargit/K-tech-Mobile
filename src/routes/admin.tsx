@@ -8,6 +8,7 @@ import {
   Users,
   Wrench,
   Settings,
+  HandCoins,
 } from "lucide-react";
 import { RequireAdmin } from "@/components/require-auth";
 
@@ -19,6 +20,7 @@ const NAV = [
   { to: "/admin/orders", label: "Orders", icon: ShoppingCart },
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/repairs", label: "Repairs", icon: Wrench },
+  { to: "/admin/lend", label: "Lend book", icon: HandCoins },
   { to: "/admin/settings", label: "Settings", icon: Settings },
 ] as const;
 
