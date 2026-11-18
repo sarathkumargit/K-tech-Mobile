@@ -93,6 +93,34 @@ function waNumber(phone: string | null): string | null {
 
 const emptyToNull = (v: string) => (v.trim() ? v.trim() : null);
 
+// "2026-11-18" -> "18/11/2026" (numbers read the same in every language).
+function numericDay(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  return y && m && d ? `${d}/${m}/${y}` : iso;
+}
+
+// WhatsApp payment reminder in English, Tamil and Sinhala, in one message.
+function reminderMessage(a: LendAccount, shop: string): string {
+  const amount = formatPrice(a.balance);
+  const due = a.due_date ? numericDay(a.due_date) : null;
+  const english =
+    `Hi ${a.customer_name}, this is ${shop}. ` +
+    `Your remaining balance for ${a.item} is ${amount}` +
+    (due ? ` (due ${due})` : "") +
+    ". Thank you!";
+  const tamil =
+    `வணக்கம் ${a.customer_name}, இது ${shop}. ` +
+    `${a.item} க்கான உங்கள் மீதித் தொகை ${amount}` +
+    (due ? ` (செலுத்த வேண்டிய திகதி: ${due})` : "") +
+    ". நன்றி!";
+  const sinhala =
+    `ආයුබෝවන් ${a.customer_name}, මෙය ${shop} වෙතින්. ` +
+    `${a.item} සඳහා ඔබගේ ඉතිරි මුදල ${amount}` +
+    (due ? ` (ගෙවිය යුතු දිනය: ${due})` : "") +
+    ". ස්තූතියි!";
+  return [english, tamil, sinhala].join("\n\n");
+}
+
 // Show a validation message (used as `return fail(...)` in form handlers).
 function fail(message: string): void {
   toast.error(message);
@@ -443,13 +471,7 @@ function LendDetail({
 }) {
   const { settings } = useSiteSettings();
   const s = STATUS[a.status];
-  const wa = whatsappLink(
-    waNumber(a.phone),
-    `Hi ${a.customer_name}, this is ${settings?.shop_name ?? "K-Tech"}. ` +
-      `Your remaining balance for ${a.item} is ${formatPrice(a.balance)}` +
-      (a.due_date ? ` (due ${fmtDay(a.due_date)})` : "") +
-      ". Thank you!",
-  );
+  const wa = whatsappLink(waNumber(a.phone), reminderMessage(a, settings?.shop_name || "K-Tech"));
 
   return (
     <>
