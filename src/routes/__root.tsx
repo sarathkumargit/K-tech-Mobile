@@ -12,15 +12,16 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportVibeError } from "../lib/vibe-error-reporting";
-import { Header } from "../components/header";
-import { Footer } from "../components/footer";
+import { Header } from "@/components/layout/header";
+import { Footer } from "@/components/layout/footer";
 import { AuthProvider } from "../lib/auth-context";
-import { RepairProvider } from "../components/repair-context";
-import { RepairModal } from "../components/repair-modal";
+import { RepairProvider } from "@/components/repair/repair-context";
+import { RepairModal } from "@/components/repair/repair-modal";
 import { Toaster } from "../components/ui/sonner";
-import { MobileNav, WhatsAppFab } from "../components/mobile-nav";
+import { MobileNav, WhatsAppFab } from "@/components/layout/mobile-nav";
 import { supabaseOrigin } from "../lib/supabase";
 import { HERO_IMAGE, heroOrigin } from "../lib/hero-image";
+import { DEFAULT_SHARE_IMAGE, SITE_NAME, absoluteUrl } from "@/lib/seo";
 
 function NotFoundComponent() {
   return (
@@ -103,15 +104,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "Brand new & used phones, accessories, and expert repairs at K-Tech.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: SITE_NAME },
+      { property: "og:locale", content: "en_LK" },
+      { property: "og:image", content: absoluteUrl(DEFAULT_SHARE_IMAGE) },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "theme-color", content: "#BF360C" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      {
-        rel: "icon",
-        type: "image/svg+xml",
-        href: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23BF360C'/%3E%3Ctext x='16' y='22' font-family='Arial' font-weight='700' font-size='18' fill='white' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E",
-      },
+      // Real icon files (Google shows the favicon next to search results).
+      { rel: "icon", href: "/favicon.ico", sizes: "48x48" },
+      { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+      { rel: "manifest", href: "/site.webmanifest" },
       // Open the connection to Supabase while the page is still loading, so the
       // first data request doesn't pay for a DNS lookup, a TCP handshake and a
       // TLS handshake before it can even ask its question.
@@ -123,8 +128,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       ...(heroOrigin
         ? [{ rel: "preconnect", href: heroOrigin }]
         : HERO_IMAGE
-        ? [{ rel: "preload", href: HERO_IMAGE, as: "image" }]
-        : []),
+          ? [{ rel: "preload", href: HERO_IMAGE, as: "image" }]
+          : []),
       {
         rel: "preload",
         href: "/fonts/plus-jakarta-sans.woff2",

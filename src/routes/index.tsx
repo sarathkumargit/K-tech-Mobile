@@ -12,13 +12,15 @@ import {
   Tag,
   LayoutGrid,
 } from "lucide-react";
-import { ProductCard, ProductGridSkeleton, ProductImage } from "@/components/product-card";
-import { ProductPrice, discountPercent } from "@/components/product-price";
-import { CountdownTimer } from "@/components/countdown-timer";
-import { EmptyState, ErrorState } from "@/components/states";
-import { useRepair } from "@/components/repair-context";
+import { ProductCard, ProductGridSkeleton, ProductImage } from "@/components/product/product-card";
+import { ProductPrice, discountPercent } from "@/components/product/product-price";
+import { CountdownTimer } from "@/components/product/countdown-timer";
+import { EmptyState, ErrorState } from "@/components/common/states";
+import { useRepair } from "@/components/repair/repair-context";
 import { useSiteSettings } from "@/hooks/use-site-settings";
+import { StoreSchema } from "@/components/seo/store-schema";
 import { HERO_IMAGE } from "@/lib/hero-image";
+import { PAGES, SITE_NAME, SITE_URL, jsonLd, seo } from "@/lib/seo";
 import { qk } from "@/lib/query-keys";
 import { getCategories } from "@/services/categoryService";
 import { cn } from "@/lib/utils";
@@ -33,23 +35,20 @@ import {
 // Hero picture: see src/lib/hero-image.ts for how to replace it with your own.
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "K-Tech — Mobile Phones, Accessories & Repairs" },
-      {
-        name: "description",
-        content:
-          "Shop brand new & used phones, accessories, chargers, and book expert phone repairs at K-Tech. Best deals and offers every day.",
-      },
-      { property: "og:title", content: "K-Tech — Mobile Phones, Accessories & Repairs" },
-      {
-        property: "og:description",
-        content: "Brand new & used phones, accessories, and expert repairs at K-Tech.",
-      },
-      { property: "og:image", content: HERO_IMAGE },
-      { name: "twitter:image", content: HERO_IMAGE },
-    ],
-  }),
+  head: () => {
+    const page = seo({ ...PAGES["/"], path: "/" });
+    return {
+      ...page,
+      scripts: [
+        jsonLd({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: SITE_NAME,
+          url: `${SITE_URL}/`,
+        }),
+      ],
+    };
+  },
   component: Index,
 });
 
@@ -67,8 +66,8 @@ function Index() {
       ...(mobileCategory === "offers"
         ? { offersOnly: true as const }
         : mobileCategory
-        ? { categorySlug: mobileCategory }
-        : {}),
+          ? { categorySlug: mobileCategory }
+          : {}),
       sort: mobileSort,
     }),
     [mobileCategory, mobileSort],
@@ -81,6 +80,7 @@ function Index() {
 
   return (
     <div>
+      <StoreSchema />
       {/* Hero — MOBILE: background image with bottom text overlay */}
       <section
         className="sm:hidden relative overflow-hidden"
@@ -134,7 +134,11 @@ function Index() {
       {/* Hero — DESKTOP: background image + gradient overlay */}
       <section
         className="relative hidden overflow-hidden sm:block"
-        style={{ backgroundImage: `url(${HERO_IMAGE})`, backgroundSize: "cover", backgroundPosition: "center top" }}
+        style={{
+          backgroundImage: `url(${HERO_IMAGE})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center top",
+        }}
       >
         <div className="absolute inset-0 bg-gradient-to-r from-[#fce8d5] from-30% via-[#fce8d5]/50 via-50% to-transparent" />
         <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-24">
@@ -201,10 +205,23 @@ function Index() {
       <section className="sm:hidden px-4 pt-6 pb-4">
         {/* Category chips */}
         <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-2">
-          <MobileChip active={!mobileCategory} label="All" onClick={() => setMobileCategory(undefined)} />
-          <MobileChip active={mobileCategory === "offers"} label="Offers" onClick={() => setMobileCategory("offers")} />
+          <MobileChip
+            active={!mobileCategory}
+            label="All"
+            onClick={() => setMobileCategory(undefined)}
+          />
+          <MobileChip
+            active={mobileCategory === "offers"}
+            label="Offers"
+            onClick={() => setMobileCategory("offers")}
+          />
           {categories.data?.map((cat) => (
-            <MobileChip key={cat.id} active={mobileCategory === cat.slug} label={cat.name} onClick={() => setMobileCategory(cat.slug)} />
+            <MobileChip
+              key={cat.id}
+              active={mobileCategory === cat.slug}
+              label={cat.name}
+              onClick={() => setMobileCategory(cat.slug)}
+            />
           ))}
         </div>
         {/* Sort */}
@@ -235,7 +252,12 @@ function Index() {
           </div>
         </div>
         {/* Product grid */}
-        <div className={cn("mt-5 transition-opacity", mobileProducts.isPlaceholderData && "opacity-60")}>
+        <div
+          className={cn(
+            "mt-5 transition-opacity",
+            mobileProducts.isPlaceholderData && "opacity-60",
+          )}
+        >
           {mobileProducts.isLoading ? (
             <ProductGridSkeleton />
           ) : mobileProducts.error ? (
@@ -251,10 +273,7 @@ function Index() {
               ))}
             </div>
           ) : (
-            <EmptyState
-              title="No products found"
-              description="Try a different category."
-            />
+            <EmptyState title="No products found" description="Try a different category." />
           )}
         </div>
       </section>

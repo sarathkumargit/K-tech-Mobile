@@ -23,17 +23,17 @@ React (TanStack Start)  →  Supabase Auth  →  Supabase Postgres (+ Row Level 
 
 ## Where things are
 
-| Path                       | What                                                                                                     |
-| -------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `supabase/schema.sql`      | Tables, security rules (RLS), storage buckets, `place_order()` etc.                                      |
-| `supabase/tests/`          | Security tests for the schema (local Postgres only)                                                      |
-| `src/lib/supabase.ts`      | The single Supabase client (anon key only)                                                               |
-| `src/types/database.ts`    | TypeScript types for the tables                                                                          |
-| `src/services/*Service.ts` | All database access: auth, products, categories, offers, cart, orders, users, storage, settings, repairs |
-| `src/hooks/`               | React Query hooks (cart, site settings, order statuses)                                                  |
-| `src/lib/auth-context.tsx` | Session, profile and admin flag                                                                          |
-| `src/routes/`              | Pages (file-based routing). `admin.*` = admin panel                                                      |
-| `src/components/admin/`    | Admin forms and UI pieces                                                                                |
+| Path                       | What                                                                                                                |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `supabase/schema.sql`      | Tables, security rules (RLS), storage buckets, `place_order()` etc.                                                 |
+| `supabase/tests/`          | Security tests for the schema (local Postgres only)                                                                 |
+| `src/lib/supabase.ts`      | The single Supabase client (anon key only)                                                                          |
+| `src/types/database.ts`    | TypeScript types for the tables                                                                                     |
+| `src/services/*Service.ts` | All database access: auth, products, categories, offers, cart, orders, users, storage, settings, repairs            |
+| `src/hooks/`               | React Query hooks (cart, site settings, order statuses)                                                             |
+| `src/lib/auth-context.tsx` | Session, profile and admin flag                                                                                     |
+| `src/routes/`              | Pages (file-based routing), grouped by area: `(site)`, `(store)`, `(account)`, `admin/`. See `src/routes/README.md` |
+| `src/components/`          | Shared UI by area: `layout`, `product`, `order`, `repair`, `auth`, `common`, `admin`; `ui` = shadcn library         |
 
 Pages call services; services call Supabase. Admin checks use the database
 function `is_admin()` (the `admin_users` table), never an email address, and
